@@ -1,7 +1,7 @@
 """
 Laboratory Exercise: Binary Heap
 --------------------------------
-Insertion and root extraction (min-heap or max-heap).
+Insertion, root extraction, and deletion (min-heap or max-heap).
 
 Every operation prints a numbered, step-by-step explanation.
 Run:  python binary_heap.py
@@ -44,12 +44,6 @@ def render_tree(root, get_left, get_right, label):
 
     walk(root, 0, "")
     return lines or ["(empty)"]
-
-
-def print_block(title, lines, indent=1):
-    print(f"{'    ' * indent}{title}")
-    for ln in lines:
-        print(f"{'    ' * indent}  {ln}")
 
 
 def read_ints(prompt):
@@ -167,6 +161,78 @@ class BinaryHeap:
         print(f"\n  Extracted: {root}")
         return root
 
+    def delete(self, key):
+        reset_steps()
+        print(f"\n=== DELETE {key} from {self.kind.upper()}-HEAP ===")
+        if not self.a:
+            print("  Heap is empty - nothing to delete.")
+            return False
+        if key not in self.a:
+            print(f"  {key} was not found in the heap.")
+            return False
+
+        i = self.a.index(key)
+        step(f"Search the array for {key}: found at index {i}.", 1)
+        last = self.a.pop()
+
+        if i == len(self.a):
+            step(f"{key} is the last element -> simply remove it; no reordering needed.", 1)
+            note(f"Array = {self.a}", 1)
+        else:
+            step(f"Remove the last element {last} and place it at index {i}, replacing {key}.", 1)
+            self.a[i] = last
+            note(f"Array = {self.a}", 1)
+
+            p = (i - 1) // 2
+            if i > 0 and self.better(self.a[i], self.a[p]):
+                step(f"{last} is better than its parent {self.a[p]} (idx {p}) -> sift UP.", 1)
+                op = "<" if self.kind == "min" else ">"
+                while i > 0:
+                    p = (i - 1) // 2
+                    if self.better(self.a[i], self.a[p]):
+                        step(f"Sift-up: compare {self.a[i]} (idx {i}) with parent {self.a[p]} (idx {p}): "
+                             f"{self.a[i]} {op} {self.a[p]} -> violates {self.kind}-heap, SWAP.", 1)
+                        self.a[i], self.a[p] = self.a[p], self.a[i]
+                        note(f"Array = {self.a}", 1)
+                        i = p
+                    else:
+                        step(f"Sift-up: compare {self.a[i]} (idx {i}) with parent {self.a[p]} (idx {p}): "
+                             f"heap property holds -> STOP.", 1)
+                        break
+                else:
+                    step(f"{self.a[0]} reached the root -> STOP.", 1)
+            else:
+                step(f"{last} is not better than its parent -> sift DOWN.", 1)
+                n = len(self.a)
+                while True:
+                    l, r, best = 2 * i + 1, 2 * i + 2, i
+                    kids = []
+                    if l < n:
+                        kids.append(f"left={self.a[l]} (idx {l})")
+                        if self.better(self.a[l], self.a[best]):
+                            best = l
+                    if r < n:
+                        kids.append(f"right={self.a[r]} (idx {r})")
+                        if self.better(self.a[r], self.a[best]):
+                            best = r
+                    if not kids:
+                        step(f"Sift-down: {self.a[i]} (idx {i}) has no children -> STOP.", 1)
+                        break
+                    word = "smallest" if self.kind == "min" else "largest"
+                    step(f"Sift-down: {self.a[i]} (idx {i}) vs children {', '.join(kids)}; "
+                         f"{word} of the three is {self.a[best]}.", 1)
+                    if best == i:
+                        note("Heap property holds -> STOP.", 1)
+                        break
+                    note(f"SWAP {self.a[i]} with {self.a[best]}.", 1)
+                    self.a[i], self.a[best] = self.a[best], self.a[i]
+                    note(f"Array = {self.a}", 1)
+                    i = best
+
+        step(f"Deletion of {key} complete.", 1)
+        self.show()
+        return True
+
 
 def choose_type():
     while True:
@@ -187,6 +253,7 @@ def main():
         print(" 3. Display current heap")
         print(" 4. Load sample data (35 33 42 10 14 19 27 44 26 31)")
         print(" 5. Clear heap / change heap type")
+        print(" 6. Delete a value")
         print(" 0. Exit")
         choice = input("Choose: ").strip()
 
@@ -205,6 +272,10 @@ def main():
             pause()
         elif choice == "5":
             h = choose_type()
+        elif choice == "6":
+            for v in read_ints("Enter integer(s) to delete: "):
+                h.delete(v)
+            pause()
         elif choice == "0":
             print("Goodbye!")
             return
